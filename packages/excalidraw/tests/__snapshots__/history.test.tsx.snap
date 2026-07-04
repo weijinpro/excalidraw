@@ -229,8 +229,8 @@ exports[`history > multiplayer undo/redo > conflicts in arrows and their bindabl
   "updated": 1,
   "version": 22,
   "width": "94.00000",
-  "x": 0,
-  "y": 0,
+  "x": "0.00000",
+  "y": "0.00000",
 }
 `;
 
@@ -444,8 +444,8 @@ exports[`history > multiplayer undo/redo > conflicts in arrows and their bindabl
             "startBinding": null,
             "version": 22,
             "width": "94.00000",
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "height": "105.58874",
@@ -620,8 +620,8 @@ exports[`history > multiplayer undo/redo > conflicts in arrows and their bindabl
             "type": "arrow",
             "version": 4,
             "width": 100,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -859,7 +859,7 @@ exports[`history > multiplayer undo/redo > conflicts in arrows and their bindabl
   "version": 25,
   "width": 100,
   "x": 150,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -1009,7 +1009,7 @@ exports[`history > multiplayer undo/redo > conflicts in arrows and their bindabl
             "version": 25,
             "width": 100,
             "x": 150,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "height": "0.01000",
@@ -1184,8 +1184,8 @@ exports[`history > multiplayer undo/redo > conflicts in arrows and their bindabl
             "type": "arrow",
             "version": 4,
             "width": 100,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -2289,40 +2289,7 @@ exports[`history > multiplayer undo/redo > conflicts in arrows and their bindabl
   "showHyperlinkPopup": false,
   "showWelcomeScreen": true,
   "snapLines": [],
-  "startBoundElement": {
-    "angle": 0,
-    "backgroundColor": "transparent",
-    "boundElements": [
-      {
-        "id": "id4",
-        "type": "arrow",
-      },
-    ],
-    "customData": undefined,
-    "fillStyle": "solid",
-    "frameId": null,
-    "groupIds": [],
-    "height": 100,
-    "id": "id0",
-    "index": "a0",
-    "isDeleted": false,
-    "link": null,
-    "locked": false,
-    "opacity": 100,
-    "roughness": 1,
-    "roundness": null,
-    "seed": 1,
-    "strokeColor": "#1e1e1e",
-    "strokeStyle": "solid",
-    "strokeWidth": 2,
-    "type": "rectangle",
-    "updated": 1,
-    "version": 3,
-    "versionNonce": 493213705,
-    "width": 100,
-    "x": -100,
-    "y": -50,
-  },
+  "startBoundElement": null,
   "stats": {
     "open": false,
     "panels": 3,
@@ -6361,7 +6328,7 @@ exports[`history > multiplayer undo/redo > should iterate through the history wh
   "version": 3,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -6391,7 +6358,7 @@ exports[`history > multiplayer undo/redo > should iterate through the history wh
   "version": 9,
   "width": 10,
   "x": 20,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -6473,7 +6440,7 @@ exports[`history > multiplayer undo/redo > should iterate through the history wh
             "version": 3,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -6528,7 +6495,7 @@ exports[`history > multiplayer undo/redo > should iterate through the history wh
             "version": 8,
             "width": 10,
             "x": 20,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -7495,8 +7462,8 @@ exports[`history > multiplayer undo/redo > should iterate through the history wh
   "updated": 1,
   "version": 7,
   "width": 10,
-  "x": 0,
-  "y": 0,
+  "x": "0.00000",
+  "y": "0.00000",
 }
 `;
 
@@ -7570,8 +7537,8 @@ exports[`history > multiplayer undo/redo > should iterate through the history wh
             "type": "arrow",
             "version": 7,
             "width": 10,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -7773,7 +7740,7 @@ exports[`history > multiplayer undo/redo > should iterate through the history wh
   "version": 9,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -7826,7 +7793,7 @@ exports[`history > multiplayer undo/redo > should iterate through the history wh
             "version": 8,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -9678,7 +9645,7 @@ exports[`history > multiplayer undo/redo > should not override remote changes on
   "version": 7,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -9788,7 +9755,7 @@ exports[`history > multiplayer undo/redo > should not override remote changes on
             "version": 3,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -9945,7 +9912,7 @@ exports[`history > multiplayer undo/redo > should not override remote changes on
   "version": 7,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -9997,7 +9964,7 @@ exports[`history > multiplayer undo/redo > should not override remote changes on
             "version": 3,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -10507,8 +10474,8 @@ exports[`history > multiplayer undo/redo > should override remotely added points
   "updated": 1,
   "version": 10,
   "width": 30,
-  "x": 0,
-  "y": 0,
+  "x": "0.00000",
+  "y": "0.00000",
 }
 `;
 
@@ -10581,8 +10548,8 @@ exports[`history > multiplayer undo/redo > should override remotely added points
             "type": "arrow",
             "version": 9,
             "width": 10,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -10796,7 +10763,7 @@ exports[`history > multiplayer undo/redo > should redistribute deltas when eleme
   "version": 9,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -10848,7 +10815,7 @@ exports[`history > multiplayer undo/redo > should redistribute deltas when eleme
             "version": 8,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -11963,7 +11930,7 @@ exports[`history > multiplayer undo/redo > should update history entries after r
   "version": 13,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -12068,7 +12035,7 @@ exports[`history > multiplayer undo/redo > should update history entries after r
             "version": 3,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -12252,8 +12219,8 @@ exports[`history > singleplayer undo/redo > remounting undo/redo buttons should 
   "updated": 1,
   "version": 4,
   "width": 10,
-  "x": 0,
-  "y": 0,
+  "x": "0.00000",
+  "y": "0.00000",
 }
 `;
 
@@ -12305,8 +12272,8 @@ exports[`history > singleplayer undo/redo > remounting undo/redo buttons should 
             "type": "rectangle",
             "version": 3,
             "width": 10,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
         },
       },
@@ -12462,7 +12429,7 @@ exports[`history > singleplayer undo/redo > should clear the redo stack on eleme
   "version": 4,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -12492,7 +12459,7 @@ exports[`history > singleplayer undo/redo > should clear the redo stack on eleme
   "version": 3,
   "width": 10,
   "x": 20,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -12544,7 +12511,7 @@ exports[`history > singleplayer undo/redo > should clear the redo stack on eleme
             "version": 3,
             "width": 10,
             "x": 20,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -13108,8 +13075,8 @@ exports[`history > singleplayer undo/redo > should create new history entry on e
   "updated": 1,
   "version": 4,
   "width": 560,
-  "x": 0,
-  "y": 0,
+  "x": "0.00000",
+  "y": "0.00000",
 }
 `;
 
@@ -13160,8 +13127,8 @@ exports[`history > singleplayer undo/redo > should create new history entry on e
             "type": "embeddable",
             "version": 4,
             "width": 560,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -13317,8 +13284,8 @@ exports[`history > singleplayer undo/redo > should create new history entry on e
   "updated": 1,
   "version": 4,
   "width": 560,
-  "x": 0,
-  "y": 0,
+  "x": "0.00000",
+  "y": "0.00000",
 }
 `;
 
@@ -13369,8 +13336,8 @@ exports[`history > singleplayer undo/redo > should create new history entry on e
             "type": "embeddable",
             "version": 4,
             "width": 560,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -14406,8 +14373,8 @@ exports[`history > singleplayer undo/redo > should disable undo/redo buttons whe
   "updated": 1,
   "version": 5,
   "width": 10,
-  "x": 0,
-  "y": 0,
+  "x": "0.00000",
+  "y": "0.00000",
 }
 `;
 
@@ -14458,8 +14425,8 @@ exports[`history > singleplayer undo/redo > should disable undo/redo buttons whe
             "type": "rectangle",
             "version": 5,
             "width": 10,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -14645,8 +14612,8 @@ exports[`history > singleplayer undo/redo > should end up with no history entry 
   "updated": 1,
   "version": 5,
   "width": 10,
-  "x": 0,
-  "y": 0,
+  "x": "0.00000",
+  "y": "0.00000",
 }
 `;
 
@@ -14697,8 +14664,8 @@ exports[`history > singleplayer undo/redo > should end up with no history entry 
             "type": "rectangle",
             "version": 5,
             "width": 10,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -14855,7 +14822,7 @@ exports[`history > singleplayer undo/redo > should iterate through the history w
   "version": 4,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -14948,7 +14915,7 @@ exports[`history > singleplayer undo/redo > should iterate through the history w
             "version": 3,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
         },
       },
@@ -15104,7 +15071,7 @@ exports[`history > singleplayer undo/redo > should not clear the redo stack on s
   "version": 3,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -15134,7 +15101,7 @@ exports[`history > singleplayer undo/redo > should not clear the redo stack on s
   "version": 5,
   "width": 10,
   "x": 20,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -15186,7 +15153,7 @@ exports[`history > singleplayer undo/redo > should not clear the redo stack on s
             "version": 3,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -15280,7 +15247,7 @@ exports[`history > singleplayer undo/redo > should not clear the redo stack on s
             "version": 5,
             "width": 10,
             "x": 20,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -16317,7 +16284,7 @@ exports[`history > singleplayer undo/redo > should not override appstate changes
   "version": 11,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -16442,7 +16409,7 @@ exports[`history > singleplayer undo/redo > should not override appstate changes
             "version": 3,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -20368,7 +20335,7 @@ exports[`history > singleplayer undo/redo > should support changes in elements' 
   "version": 7,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -20450,7 +20417,7 @@ exports[`history > singleplayer undo/redo > should support changes in elements' 
             "version": 3,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -21330,7 +21297,7 @@ exports[`history > singleplayer undo/redo > should support element creation, del
   "version": 5,
   "width": 10,
   "x": 10,
-  "y": 0,
+  "y": "0.00000",
 }
 `;
 
@@ -21442,7 +21409,7 @@ exports[`history > singleplayer undo/redo > should support element creation, del
             "version": 5,
             "width": 10,
             "x": 10,
-            "y": 0,
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,
@@ -21814,8 +21781,8 @@ exports[`history > singleplayer undo/redo > should support linear element creati
   "updated": 1,
   "version": 12,
   "width": 20,
-  "x": 0,
-  "y": 0,
+  "x": "0.00000",
+  "y": "0.00000",
 }
 `;
 
@@ -21888,8 +21855,8 @@ exports[`history > singleplayer undo/redo > should support linear element creati
             "type": "arrow",
             "version": 10,
             "width": 10,
-            "x": 0,
-            "y": 0,
+            "x": "0.00000",
+            "y": "0.00000",
           },
           "inserted": {
             "isDeleted": true,

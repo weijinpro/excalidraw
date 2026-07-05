@@ -1,6 +1,7 @@
 import {
   getCommonBounds,
   getElementsInGroup,
+  isNonDeletedElement,
   selectGroupsFromGivenElements,
 } from "@excalidraw/element";
 import { sceneCoordsToViewportCoords } from "@excalidraw/common";
@@ -25,7 +26,17 @@ const UnlockPopup = ({
   app: App;
   activeLockedId: NonNullable<AppState["activeLockedId"]>;
 }) => {
-  const element = app.scene.getElement(activeLockedId);
+  const candidateElement = app.scene.getElement(activeLockedId);
+  // SAFETY: This should never happen, but log it just in case
+  if (candidateElement && !isNonDeletedElement(candidateElement)) {
+    console.error(
+      "[NONDELETED][INVARIANT] UnlockPopup: activeLockedId points to a deleted element",
+    );
+  }
+  const element =
+    candidateElement && isNonDeletedElement(candidateElement)
+      ? candidateElement
+      : null;
 
   const elements = element
     ? [element]

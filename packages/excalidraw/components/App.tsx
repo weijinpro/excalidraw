@@ -110,6 +110,8 @@ import {
   setDesktopUIMode,
   isSelectionLikeTool,
   oneOf,
+  getElementBoundsFromPoints,
+  ELEMENT_PENDING_DRAW_SHAPE_OPACITY,
   getStrokeWidthByKey,
 } from "@excalidraw/common";
 
@@ -261,6 +263,7 @@ import {
   getUncroppedWidthAndHeight,
   getActiveTextElement,
   isEligibleFrameChildType,
+  convertToShape,
   getBindingStrategyForDraggingBindingElementEndpoints,
 } from "@excalidraw/element";
 
@@ -291,6 +294,7 @@ import type {
   SceneElementsMap,
   NonDeletedSceneElementsMap,
   ExcalidrawBindableElement,
+  ExcalidrawNonSelectionElement,
 } from "@excalidraw/element/types";
 
 import type { Mutable, ValueOf } from "@excalidraw/common/utility-types";
@@ -429,6 +433,7 @@ import {
   setCursorForShape,
 } from "../cursor";
 import { ElementCanvasButtons } from "../components/ElementCanvasButtons";
+import { DrawShapeTrail } from "../drawShapeTrail";
 import { LaserTrails } from "../laserTrails";
 import { withBatchedUpdates, withBatchedUpdatesThrottled } from "../reactUtils";
 import { isPointHittingTextAutoResizeHandle } from "../textAutoResizeHandle";
@@ -744,6 +749,7 @@ class App extends React.Component<AppProps, AppState> {
   previousPointerMoveCoords: { x: number; y: number } | null = null;
   lastViewportPosition = { x: 0, y: 0 };
 
+  drawShapeTrail = new DrawShapeTrail(this);
   laserTrails = new LaserTrails(this);
   eraserTrail = new EraserTrail(this);
   lassoTrail = new LassoTrail(this);
@@ -2267,6 +2273,7 @@ class App extends React.Component<AppProps, AppState> {
                               this.laserTrails,
                               this.lassoTrail,
                               this.eraserTrail,
+                              this.drawShapeTrail,
                             ]}
                           />
                           {selectedElements.length === 1 &&
@@ -3302,6 +3309,7 @@ class App extends React.Component<AppProps, AppState> {
     this.removeEventListeners();
     this.library.destroy();
     this.laserTrails.stop();
+    this.drawShapeTrail.stop();
     this.eraserTrail.stop();
     this.onChangeEmitter.clear();
     this.store.onStoreIncrementEmitter.clear();
@@ -7323,7 +7331,6 @@ class App extends React.Component<AppProps, AppState> {
     if (isBindingElementType(this.state.activeTool.type)) {
       // Hovering with a selected tool or creating new linear element via click
       // and point
-      const { newElement } = this.state;
       if (!newElement && isBindingEnabled(this.state)) {
         const globalPoint = pointFrom<GlobalPoint>(
           scenePointerX,
@@ -8311,6 +8318,11 @@ class App extends React.Component<AppProps, AppState> {
       );
     } else if (this.state.activeTool.type === "laser") {
       this.laserTrails.startPath(
+        pointerDownState.lastCoords.x,
+        pointerDownState.lastCoords.y,
+      );
+    } else if (this.state.activeTool.type === "drawShape") {
+      this.drawShapeTrail.startPath(
         pointerDownState.lastCoords.x,
         pointerDownState.lastCoords.y,
       );
@@ -10036,6 +10048,50 @@ class App extends React.Component<AppProps, AppState> {
         this.laserTrails.addPointToPath(pointerCoords.x, pointerCoords.y);
       }
 
+      if (this.state.activeTool.type === "drawShape") {
+        this.drawShapeTrail.addPointToPath(pointerCoords.x, pointerCoords.y);
+      }
+
+      // Set up drawShape tool preview
+      if (this.state.activeTool.type === "drawShape") {
+        const drawShapeTrailPoints = this.drawShapeTrail.getCurrentPoints();
+        if (drawShapeTrailPoints.length >= 3) {
+          const [minX, minY, maxX, maxY] =
+            getElementBoundsFromPoints(drawShapeTrailPoints);
+          const width = maxX - minX;
+          const height = maxY - minY;
+
+          if (width > 2 && height > 2) {
+            const shapePreview = convertToShape(
+              drawShapeTrailPoints,
+              this.state,
+              this.scene.getNonDeletedElementsMap(),
+              this.state.newElement,
+            ) as ExcalidrawNonSelectionElement | undefined;
+
+            if (shapePreview) {
+              this.setState({
+                newElement: {
+                  ...shapePreview,
+                  seed: 1,
+                  opacity: ELEMENT_PENDING_DRAW_SHAPE_OPACITY,
+                },
+              });
+            } else {
+              this.setState({
+                newElement: null,
+              });
+            }
+          } else {
+            this.setState({
+              newElement: null,
+            });
+          }
+        }
+
+        return;
+      }
+
       const [gridX, gridY] = getGridPoint(
         pointerCoords.x,
         pointerCoords.y,
@@ -11126,7 +11182,17 @@ class App extends React.Component<AppProps, AppState> {
         return;
       }
 
-      if (isLinearElement(newElement)) {
+      if (
+        isLinearElement(newElement) &&
+        this.state.activeTool.type !== "drawShape"
+      ) {
+        if (
+          newElement!.points.length > 1 &&
+          newElement.points[1][0] !== 0 &&
+          newElement.points[1][1] !== 0
+        ) {
+          this.store.scheduleCapture();
+        }
         const pointerCoords = viewportCoordsToSceneCoords(
           childEvent,
           this.state,
@@ -11810,6 +11876,82 @@ class App extends React.Component<AppProps, AppState> {
 
       if (activeTool.type === "laser") {
         this.laserTrails.endPath();
+        return;
+      }
+
+      if (activeTool.type === "drawShape") {
+        const points = this.drawShapeTrail.getCurrentPoints();
+        this.drawShapeTrail.endPath();
+
+        if (points.length >= 3) {
+          const [minX, minY, maxX, maxY] = getElementBoundsFromPoints(points);
+          const width = maxX - minX;
+          const height = maxY - minY;
+
+          if (width > 2 && height > 2) {
+            const detectedElement =
+              this.state.newElement ||
+              convertToShape(
+                points,
+                this.state,
+                this.scene.getNonDeletedElementsMap(),
+                this.state.newElement,
+              );
+
+            if (detectedElement) {
+              const _detectedElement = {
+                ...detectedElement,
+                seed: randomInteger(),
+                opacity: this.state.currentItemOpacity,
+              };
+              this.insertNewElement(_detectedElement);
+
+              if (isBindingElement(_detectedElement)) {
+                const [x, y] =
+                  LinearElementEditor.getPointAtIndexGlobalCoordinates(
+                    _detectedElement,
+                    1,
+                    this.scene.getNonDeletedElementsMap(),
+                  );
+
+                this.scene.mutateElement(_detectedElement, {
+                  startArrowhead: this.state.currentItemStartArrowhead,
+                  endArrowhead: this.state.currentItemEndArrowhead,
+                });
+
+                flushSync(() => {
+                  const linearElement = new LinearElementEditor(
+                    _detectedElement,
+                    this.scene.getNonDeletedElementsMap(),
+                  );
+                  this.setState({
+                    newElement: _detectedElement,
+                    selectedLinearElement: {
+                      ...linearElement,
+                      pointerOffset: {
+                        x: 0,
+                        y: 0,
+                      },
+                      initialState: {
+                        ...linearElement.initialState,
+                        lastClickedPoint: 1,
+                      },
+                      selectedPointsIndices: [1],
+                    },
+                  });
+                });
+
+                this.actionManager.executeAction(actionFinalize, "ui", {
+                  event: childEvent,
+                  sceneCoords: { x, y },
+                });
+              }
+            }
+          }
+        }
+
+        this.actionManager.executeAction(actionFinalize);
+        this.drawShapeTrail.clearTrails();
         return;
       }
 

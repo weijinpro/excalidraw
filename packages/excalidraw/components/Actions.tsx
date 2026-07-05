@@ -39,6 +39,7 @@ import { t } from "../i18n";
 import {
   canChangeRoundness,
   canHaveArrowheads,
+  getSelectedElements,
   getTargetElements,
   hasBackground,
   hasFreedrawMode,
@@ -73,6 +74,7 @@ import {
   frameToolIcon,
   mermaidLogoIcon,
   laserPointerToolIcon,
+  drawShapeToolIcon,
   MagicIcon,
   LassoIcon,
   sharpArrowIcon,
@@ -120,7 +122,8 @@ export const canChangeStrokeColor = (
       commonSelectedType !== "image" &&
       commonSelectedType !== "frame" &&
       commonSelectedType !== "magicframe") ||
-    targetElements.some((element) => hasStrokeColor(element.type))
+    targetElements.some((element) => hasStrokeColor(element.type)) ||
+    appState.activeTool.type === "drawShape"
   );
 };
 
@@ -130,7 +133,8 @@ export const canChangeBackgroundColor = (
 ) => {
   return (
     hasBackground(appState.activeTool.type) ||
-    targetElements.some((element) => hasBackground(element.type))
+    targetElements.some((element) => hasBackground(element.type)) ||
+    appState.activeTool.type === "drawShape"
   );
 };
 
@@ -146,6 +150,7 @@ export const SelectedShapeActions = ({
   app: AppClassProperties;
 }) => {
   const targetElements = getTargetElements(elementsMap, appState);
+  const selectedElements = getSelectedElements(elementsMap, appState);
 
   let isSingleElementBoundContainer = false;
   if (
@@ -161,13 +166,20 @@ export const SelectedShapeActions = ({
   const editorInterface = useEditorInterface();
   const isRTL = document.documentElement.getAttribute("dir") === "rtl";
 
+  const isFreedrawActive =
+    appState.activeTool.type === "freedraw" ||
+    targetElements.some((element) => element.type === "freedraw");
+
+  const isDrawShapeActive = appState.activeTool.type === "drawShape";
+
   const showFillIcons =
     (hasBackground(appState.activeTool.type) &&
       !isTransparent(appState.currentItemBackgroundColor)) ||
     targetElements.some(
       (element) =>
         hasBackground(element.type) && !isTransparent(element.backgroundColor),
-    );
+    ) ||
+    isDrawShapeActive;
 
   const showLinkIcon =
     targetElements.length === 1 || isSingleElementBoundContainer;
@@ -186,6 +198,9 @@ export const SelectedShapeActions = ({
   const showAlignActions =
     !isSingleElementBoundContainer && alignActionsPredicate(appState, app);
 
+  const showLayerActions =
+    !isFreedrawActive || selectedElements.some((x) => x.type === "freedraw");
+
   return (
     <div className="selected-shape-actions">
       <div>
@@ -195,22 +210,23 @@ export const SelectedShapeActions = ({
       {canChangeBackgroundColor(appState, targetElements) && (
         <div>{renderAction("changeBackgroundColor")}</div>
       )}
+
       {showFillIcons && renderAction("changeFillStyle")}
 
       {(hasStrokeWidth(appState.activeTool.type) ||
         targetElements.some((element) => hasStrokeWidth(element.type))) &&
         renderAction("changeStrokeWidth")}
 
+      {(hasStrokeStyle(appState.activeTool.type) ||
+        targetElements.some((element) => hasStrokeStyle(element.type)) ||
+        isDrawShapeActive) && <>{renderAction("changeStrokeStyle")}</>}
       {(hasFreedrawMode(appState.activeTool.type) ||
         targetElements.some((element) => hasFreedrawMode(element.type))) &&
         renderAction("changeFreedrawMode")}
 
       {(hasStrokeStyle(appState.activeTool.type) ||
         targetElements.some((element) => hasStrokeStyle(element.type))) && (
-        <>
-          {renderAction("changeStrokeStyle")}
-          {renderAction("changeSloppiness")}
-        </>
+        <>{renderAction("changeSloppiness")}</>
       )}
 
       {(canChangeRoundness(appState.activeTool.type) ||
@@ -243,15 +259,17 @@ export const SelectedShapeActions = ({
 
       {renderAction("changeOpacity")}
 
-      <fieldset>
-        <legend>{t("labels.layers")}</legend>
-        <div className="buttonList">
-          {renderAction("sendToBack")}
-          {renderAction("sendBackward")}
-          {renderAction("bringForward")}
-          {renderAction("bringToFront")}
-        </div>
-      </fieldset>
+      {showLayerActions && (
+        <fieldset>
+          <legend>{t("labels.layers")}</legend>
+          <div className="buttonList">
+            {renderAction("sendToBack")}
+            {renderAction("sendBackward")}
+            {renderAction("bringForward")}
+            {renderAction("bringToFront")}
+          </div>
+        </fieldset>
+      )}
 
       {showAlignActions && !isSingleElementBoundContainer && (
         <fieldset>
@@ -328,13 +346,16 @@ const CombinedShapeProperties = ({
   setAppState: React.Component<any, AppState>["setState"];
   container: HTMLDivElement | null;
 }) => {
+  const isDrawShapeActive = appState.activeTool.type === "drawShape";
+
   const showFillIcons =
     (hasBackground(appState.activeTool.type) &&
       !isTransparent(appState.currentItemBackgroundColor)) ||
     targetElements.some(
       (element) =>
         hasBackground(element.type) && !isTransparent(element.backgroundColor),
-    );
+    ) ||
+    isDrawShapeActive;
 
   const shouldShowCombinedProperties =
     targetElements.length > 0 ||
@@ -408,12 +429,12 @@ const CombinedShapeProperties = ({
               {(hasStrokeStyle(appState.activeTool.type) ||
                 targetElements.some((element) =>
                   hasStrokeStyle(element.type),
-                )) && (
-                <>
-                  {renderAction("changeStrokeStyle")}
-                  {renderAction("changeSloppiness")}
-                </>
-              )}
+                ) ||
+                isDrawShapeActive) && <>{renderAction("changeStrokeStyle")}</>}
+              {(hasStrokeStyle(appState.activeTool.type) ||
+                targetElements.some((element) =>
+                  hasStrokeStyle(element.type),
+                )) && <>{renderAction("changeSloppiness")}</>}
               {(canChangeRoundness(appState.activeTool.type) ||
                 targetElements.some((element) =>
                   canChangeRoundness(element.type),
@@ -443,14 +464,13 @@ const CombinedArrowProperties = ({
   container: HTMLDivElement | null;
   app: AppClassProperties;
 }) => {
-  const showShowArrowProperties =
-    toolIsArrow(appState.activeTool.type) ||
-    targetElements.some((element) => toolIsArrow(element.type));
-  const isOpen = appState.openPopup === "compactArrowProperties";
+  const showArrowProperties = toolIsArrow(appState.activeTool.type);
 
-  if (!showShowArrowProperties) {
+  if (!showArrowProperties) {
     return null;
   }
+
+  const isOpen = appState.openPopup === "compactArrowProperties";
 
   return (
     <div className="compact-action-item">
@@ -620,6 +640,7 @@ const CombinedExtraActions = ({
   appState,
   renderAction,
   targetElements,
+  selectedElements,
   setAppState,
   container,
   app,
@@ -628,6 +649,7 @@ const CombinedExtraActions = ({
 }: {
   appState: UIAppState;
   targetElements: ExcalidrawElement[];
+  selectedElements: ExcalidrawElement[];
   renderAction: ActionManager["renderAction"];
   setAppState: React.Component<any, AppState>["setState"];
   container: HTMLDivElement | null;
@@ -655,6 +677,9 @@ const CombinedExtraActions = ({
 
   const isRTL = document.documentElement.getAttribute("dir") === "rtl";
   const isOpen = appState.openPopup === "compactOtherProperties";
+  const showLayerActions =
+    appState.activeTool.type !== "freedraw" ||
+    selectedElements.some((x) => x.type === "freedraw");
 
   if (isEditingTextOrNewElement || targetElements.length === 0) {
     return null;
@@ -702,15 +727,17 @@ const CombinedExtraActions = ({
             onClose={() => {}}
           >
             <div className="selected-shape-actions">
-              <fieldset>
-                <legend>{t("labels.layers")}</legend>
-                <div className="buttonList">
-                  {renderAction("sendToBack")}
-                  {renderAction("sendBackward")}
-                  {renderAction("bringForward")}
-                  {renderAction("bringToFront")}
-                </div>
-              </fieldset>
+              {showLayerActions && (
+                <fieldset>
+                  <legend>{t("labels.layers")}</legend>
+                  <div className="buttonList">
+                    {renderAction("sendToBack")}
+                    {renderAction("sendBackward")}
+                    {renderAction("bringForward")}
+                    {renderAction("bringToFront")}
+                  </div>
+                </fieldset>
+              )}
 
               {showAlignActions && !isSingleElementBoundContainer && (
                 <fieldset>
@@ -809,6 +836,7 @@ export const CompactShapeActions = ({
   setAppState: React.Component<any, AppState>["setState"];
 }) => {
   const targetElements = getTargetElements(elementsMap, appState);
+  const selectedElements = getSelectedElements(elementsMap, appState);
   const { container } = useExcalidrawContainer();
 
   const isEditingTextOrNewElement = Boolean(
@@ -904,6 +932,7 @@ export const CompactShapeActions = ({
         appState={appState}
         renderAction={renderAction}
         targetElements={targetElements}
+        selectedElements={selectedElements}
         setAppState={setAppState}
         container={container}
         app={app}
@@ -926,6 +955,7 @@ export const MobileShapeActions = ({
   setAppState: React.Component<any, AppState>["setState"];
 }) => {
   const targetElements = getTargetElements(elementsMap, appState);
+  const selectedElements = getSelectedElements(elementsMap, appState);
   const { container } = useExcalidrawContainer();
   const mobileActionsRef = useRef<HTMLDivElement>(null);
 
@@ -1026,6 +1056,7 @@ export const MobileShapeActions = ({
           appState={appState}
           renderAction={renderAction}
           targetElements={targetElements}
+          selectedElements={selectedElements}
           setAppState={setAppState}
           container={container}
           app={app}
@@ -1092,6 +1123,7 @@ export const ShapesSwitcher = ({
   ] as const;
 
   const frameToolSelected = activeTool.type === "frame";
+  const drawShapeToolSelected = activeTool.type === "drawShape";
   const laserToolSelected = activeTool.type === "laser";
   const lassoToolSelected =
     isFullStylesPanel &&
@@ -1222,6 +1254,7 @@ export const ShapesSwitcher = ({
             "App-toolbar__extra-tools-trigger--selected":
               frameToolSelected ||
               embeddableToolSelected ||
+              drawShapeToolSelected ||
               lassoToolSelected ||
               // in collab we're already highlighting the laser button
               // outside toolbar, so let's not highlight extra-tools button
@@ -1238,6 +1271,8 @@ export const ShapesSwitcher = ({
             ? frameToolIcon
             : embeddableToolSelected
             ? EmbedIcon
+            : drawShapeToolSelected
+            ? drawShapeToolIcon
             : laserToolSelected && !app.props.isCollaborating
             ? laserPointerToolIcon
             : lassoToolSelected
@@ -1265,6 +1300,15 @@ export const ShapesSwitcher = ({
             selected={embeddableToolSelected}
           >
             {t("toolBar.embeddable")}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => app.setActiveTool({ type: "drawShape" })}
+            icon={drawShapeToolIcon}
+            shortcut={KEYS.S.toLocaleUpperCase()}
+            data-testid="toolbar-drawShape"
+            selected={drawShapeToolSelected}
+          >
+            {t("toolBar.drawShape")}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => app.setActiveTool({ type: "laser" })}

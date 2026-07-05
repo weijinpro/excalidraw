@@ -159,7 +159,8 @@ export type ToolType =
   | "frame"
   | "magicframe"
   | "embeddable"
-  | "laser";
+  | "laser"
+  | "drawShape";
 
 export type ElementOrToolType = ExcalidrawElementType | ToolType | "custom";
 
@@ -414,6 +415,7 @@ export interface AppState {
   currentHoveredFontFamily: FontFamilyValues | null;
   currentItemRoundness: StrokeRoundness;
   currentItemArrowType: "sharp" | "round" | "elbow";
+  isConvertToShapeEnabled: boolean;
   viewBackgroundColor: string;
   scrollX: number;
   scrollY: number;

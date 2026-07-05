@@ -646,6 +646,28 @@ const gesture: Gesture = {
   initialScale: null,
 };
 
+const isInteractionEnabled = (props: Pick<AppProps, "interaction">) => {
+  return props.interaction !== false && typeof props.interaction !== "object";
+};
+
+const isLinkInteractionEnabled = (props: Pick<AppProps, "interaction">) => {
+  if (typeof props.interaction === "object" && props.interaction !== null) {
+    return props.interaction.allowed?.links === true;
+  }
+  return props.interaction !== false;
+};
+
+// NOTE only consulted while non-interactive (the interactive editor
+// prevents/handles browser zoom through its own input handlers)
+const isBrowserZoomInteractionEnabled = (
+  props: Pick<AppProps, "interaction">,
+) => {
+  if (typeof props.interaction === "object" && props.interaction !== null) {
+    return props.interaction.allowed?.browserZoom === true;
+  }
+  return false;
+};
+
 class App extends React.Component<AppProps, AppState> {
   canvas: AppClassProperties["canvas"];
   interactiveCanvas: AppClassProperties["interactiveCanvas"] = null;
@@ -846,7 +868,9 @@ class App extends React.Component<AppProps, AppState> {
       exportWithDarkMode: theme === THEME.DARK,
       isLoading: true,
       ...this.getCanvasOffsets(),
-      viewModeEnabled,
+      // non-interactive editor implies view mode so that all edit-mode
+      // gates apply
+      viewModeEnabled: isInteractionEnabled(props) ? viewModeEnabled : true,
       zenModeEnabled,
       objectsSnapModeEnabled,
       gridModeEnabled: gridModeEnabled ?? defaultAppState.gridModeEnabled,
@@ -893,6 +917,47 @@ class App extends React.Component<AppProps, AppState> {
     // will invalidate it (so in StrictMode, doing this in constructor alone
     // would be a problem)
     this.api = this.createExcalidrawAPI();
+  }
+
+  /**
+   * Whether the editor accepts user input (pointer, keyboard, wheel, touch,
+   * clipboard, drag&drop). When `false`, the editor is fully inert for the
+   * user, but remains controllable through the imperative API.
+   *
+   * All user-input entry points must consult this getter (directly or by
+   * not being attached/rendered at all).
+   */
+  public get interactionEnabled(): boolean {
+    return isInteractionEnabled(this.props);
+  }
+
+  /**
+   * Whether element links render their link icon and are clickable.
+   * True when fully interactive, or when `interaction: { allowed: { links:
+   * true } }`
+   * (in which case clicking anywhere on a linked element opens the link,
+   * same as in view mode).
+   */
+  public get linksEnabled(): boolean {
+    return isLinkInteractionEnabled(this.props);
+  }
+
+  /**
+   * Whether the browser's own zoom (ctrl/cmd + wheel, pinch, keyboard
+   * shortcuts) stays available over the non-interactive editor.
+   * Prevented by default.
+   */
+  public get browserZoomEnabled(): boolean {
+    return isBrowserZoomInteractionEnabled(this.props);
+  }
+
+  /**
+   * Whether the editor UI (chrome) is rendered — toolbar, menus, footer,
+   * sidebars, dialogs, popups, context menu. Canvas content (elements, text
+   * editing surface, frame names, embeds) renders regardless.
+   */
+  public get uiEnabled(): boolean {
+    return this.props.ui !== false;
   }
 
   updateEditorAtom = <Value, Args extends unknown[], Result>(
@@ -2189,6 +2254,10 @@ class App extends React.Component<AppProps, AppState> {
             this.state.viewModeEnabled ||
             this.state.openDialog?.name === "elementLinkSelector",
           "excalidraw--mobile": this.editorInterface.formFactor === "phone",
+          "excalidraw--non-interactive": !this.interactionEnabled,
+          "excalidraw--allow-browser-zoom":
+            !this.interactionEnabled && this.browserZoomEnabled,
+          "excalidraw--ui-hidden": !this.uiEnabled,
         })}
         style={{
           ["--ui-pointerEvents" as any]: shouldBlockPointerEvents
@@ -2197,13 +2266,19 @@ class App extends React.Component<AppProps, AppState> {
           ["--right-sidebar-width" as any]: `${RIGHT_SIDEBAR_WIDTH}px`,
         }}
         ref={this.excalidrawContainerRef}
-        onDrop={this.handleAppOnDrop}
+        onDrop={this.interactionEnabled ? this.handleAppOnDrop : undefined}
         tabIndex={0}
         onKeyDown={
-          this.props.handleKeyboardGlobally ? undefined : this.onKeyDown
+          this.props.handleKeyboardGlobally || !this.interactionEnabled
+            ? undefined
+            : this.onKeyDown
         }
-        onPointerEnter={this.toggleOverscrollBehavior}
-        onPointerLeave={this.toggleOverscrollBehavior}
+        onPointerEnter={
+          this.interactionEnabled ? this.toggleOverscrollBehavior : undefined
+        }
+        onPointerLeave={
+          this.interactionEnabled ? this.toggleOverscrollBehavior : undefined
+        }
       >
         <ExcalidrawAPIContext.Provider value={this.api}>
           <AppContext.Provider value={this}>
@@ -2225,6 +2300,9 @@ class App extends React.Component<AppProps, AppState> {
                           <LayerUI
                             canvas={this.canvas}
                             appState={this.state}
+                            // NOTE read via `app.uiEnabled` inside LayerUI;
+                            // passed as prop only to bust the memo comparator
+                            uiEnabled={this.uiEnabled}
                             files={this.files}
                             setAppState={this.setAppState}
                             actionManager={this.actionManager}
@@ -2269,7 +2347,8 @@ class App extends React.Component<AppProps, AppState> {
                               this.eraserTrail,
                             ]}
                           />
-                          {selectedElements.length === 1 &&
+                          {this.uiEnabled &&
+                            selectedElements.length === 1 &&
                             this.state.openDialog?.name !==
                               "elementLinkSelector" &&
                             this.state.showHyperlinkPopup && (
@@ -2285,7 +2364,8 @@ class App extends React.Component<AppProps, AppState> {
                                 }
                               />
                             )}
-                          {this.props.aiEnabled !== false &&
+                          {this.uiEnabled &&
+                            this.props.aiEnabled !== false &&
                             selectedElements.length === 1 &&
                             isMagicFrameElement(firstSelectedElement) && (
                               <ElementCanvasButtons
@@ -2305,7 +2385,8 @@ class App extends React.Component<AppProps, AppState> {
                                 />
                               </ElementCanvasButtons>
                             )}
-                          {selectedElements.length === 1 &&
+                          {this.uiEnabled &&
+                            selectedElements.length === 1 &&
                             isIframeElement(firstSelectedElement) &&
                             firstSelectedElement.customData?.generationData
                               ?.status === "done" && (
@@ -2357,7 +2438,7 @@ class App extends React.Component<AppProps, AppState> {
                               </ElementCanvasButtons>
                             )}
 
-                          {this.state.contextMenu && (
+                          {this.uiEnabled && this.state.contextMenu && (
                             <ContextMenu
                               items={this.state.contextMenu.items}
                               top={this.state.contextMenu.top}
@@ -2387,6 +2468,7 @@ class App extends React.Component<AppProps, AppState> {
                               imageCache: this.imageCache,
                               isExporting: false,
                               renderGrid: isGridModeEnabled(this),
+                              renderLinks: this.linksEnabled,
                               canvasBackgroundColor:
                                 this.state.viewBackgroundColor,
                               embedsValidationStatus:
@@ -2439,6 +2521,7 @@ class App extends React.Component<AppProps, AppState> {
                               this.props.renderScrollbars === true
                             }
                             editorInterface={this.editorInterface}
+                            interactionEnabled={this.interactionEnabled}
                             renderInteractiveSceneCallback={
                               this.renderInteractiveSceneCallback
                             }
@@ -2452,7 +2535,7 @@ class App extends React.Component<AppProps, AppState> {
                             onPointerDown={this.handleCanvasPointerDown}
                             onDoubleClick={this.handleCanvasDoubleClick}
                           />
-                          {this.state.userToFollow && (
+                          {this.uiEnabled && this.state.userToFollow && (
                             <FollowMode
                               width={this.state.width}
                               height={this.state.height}
@@ -2461,13 +2544,13 @@ class App extends React.Component<AppProps, AppState> {
                             />
                           )}
                           {this.renderFrameNames()}
-                          {this.state.activeLockedId && (
+                          {this.uiEnabled && this.state.activeLockedId && (
                             <UnlockPopup
                               app={this}
                               activeLockedId={this.state.activeLockedId}
                             />
                           )}
-                          {showShapeSwitchPanel && (
+                          {this.uiEnabled && showShapeSwitchPanel && (
                             <ConvertElementTypePopup app={this} />
                           )}
                         </ExcalidrawActionManagerContext.Provider>
@@ -2845,6 +2928,12 @@ class App extends React.Component<AppProps, AppState> {
         viewModeEnabled = this.props.viewModeEnabled;
       }
 
+      // non-interactive editor implies view mode (overrides both the action
+      // result and the host-supplied `viewModeEnabled` prop)
+      if (!this.interactionEnabled) {
+        viewModeEnabled = true;
+      }
+
       if (typeof this.props.zenModeEnabled !== "undefined") {
         zenModeEnabled = this.props.zenModeEnabled;
       }
@@ -2911,6 +3000,29 @@ class App extends React.Component<AppProps, AppState> {
 
   private disableEvent: EventListener = (event) => {
     event.preventDefault();
+  };
+
+  // prevent the browser's own zoom over the non-interactive editor while
+  // letting regular scroll through (trackpad pinch is delivered as
+  // ctrl+wheel)
+  private preventBrowserZoomWheel = (event: WheelEvent) => {
+    if (event[KEYS.CTRL_OR_CMD]) {
+      event.preventDefault();
+    }
+  };
+
+  private preventBrowserZoomKeyDown = (event: KeyboardEvent) => {
+    if (
+      event[KEYS.CTRL_OR_CMD] &&
+      (event.code === CODES.EQUAL ||
+        event.code === CODES.MINUS ||
+        event.code === CODES.ZERO ||
+        event.code === CODES.NUM_ADD ||
+        event.code === CODES.NUM_SUBTRACT ||
+        event.code === CODES.NUM_ZERO)
+    ) {
+      event.preventDefault();
+    }
   };
 
   private resetHistory = () => {
@@ -3348,6 +3460,85 @@ class App extends React.Component<AppProps, AppState> {
     this.removeEventListeners();
 
     // -------------------------------------------------------------------------
+    //          listeners active even when the editor is non-interactive
+    // -------------------------------------------------------------------------
+
+    this.onRemoveEventListenersEmitter.once(
+      addEventListener(window, EVENT.MESSAGE, this.onWindowMessage, false),
+      addEventListener(document, EVENT.POINTER_UP, this.removePointer, {
+        passive: false,
+      }), // #3553
+      // rerender text elements on font load to fix #637 && #1553
+      addEventListener(
+        document.fonts,
+        "loadingdone",
+        (event) => {
+          const fontFaces = (event as FontFaceSetLoadEvent).fontfaces;
+          this.fonts.onLoaded(fontFaces);
+        },
+        { passive: false },
+      ),
+      addEventListener(
+        window,
+        EVENT.FOCUS,
+        () => {
+          this.maybeCleanupAfterMissingPointerUp(null);
+          // browsers (chrome?) tend to free up memory a lot, which results
+          // in canvas context being cleared. Thus re-render on focus.
+          this.triggerRender(true);
+        },
+        { passive: false },
+      ),
+    );
+
+    if (!this.interactionEnabled) {
+      // NOTE by not attaching the wheel/touch/gesture listeners below (which
+      // preventDefault), the browser default behavior — such as scrolling the
+      // page over the editor — is retained while non-interactive
+      if (!this.browserZoomEnabled) {
+        // ...except for the browser's own zoom, which we prevent over the
+        // editor by default, mirroring the interactive editor (opt out via
+        // `interaction: { allowed: { browserZoom: true } }`)
+        this.onRemoveEventListenersEmitter.once(
+          addEventListener(
+            this.excalidrawContainerRef.current,
+            EVENT.WHEEL,
+            this.preventBrowserZoomWheel,
+            { passive: false },
+          ),
+          // Safari-only desktop pinch
+          addEventListener(
+            this.excalidrawContainerRef.current,
+            EVENT.GESTURE_START as any,
+            this.disableEvent,
+            false,
+          ),
+          addEventListener(
+            this.excalidrawContainerRef.current,
+            EVENT.GESTURE_CHANGE as any,
+            this.disableEvent,
+            false,
+          ),
+          addEventListener(
+            this.excalidrawContainerRef.current,
+            EVENT.GESTURE_END as any,
+            this.disableEvent,
+            false,
+          ),
+          addEventListener(
+            this.props.handleKeyboardGlobally
+              ? document
+              : this.excalidrawContainerRef.current,
+            EVENT.KEYDOWN,
+            this.preventBrowserZoomKeyDown as EventListener,
+            false,
+          ),
+        );
+      }
+      return;
+    }
+
+    // -------------------------------------------------------------------------
     //                        view+edit mode listeners
     // -------------------------------------------------------------------------
 
@@ -3364,26 +3555,12 @@ class App extends React.Component<AppProps, AppState> {
         this.handleWheel,
         { passive: false },
       ),
-      addEventListener(window, EVENT.MESSAGE, this.onWindowMessage, false),
-      addEventListener(document, EVENT.POINTER_UP, this.removePointer, {
-        passive: false,
-      }), // #3553
       addEventListener(document, EVENT.COPY, this.onCopy, { passive: false }),
       addEventListener(document, EVENT.KEYUP, this.onKeyUp, { passive: true }),
       addEventListener(
         document,
         EVENT.POINTER_MOVE,
         this.updateCurrentCursorPosition,
-        { passive: false },
-      ),
-      // rerender text elements on font load to fix #637 && #1553
-      addEventListener(
-        document.fonts,
-        "loadingdone",
-        (event) => {
-          const fontFaces = (event as FontFaceSetLoadEvent).fontfaces;
-          this.fonts.onLoaded(fontFaces);
-        },
         { passive: false },
       ),
       // Safari-only desktop pinch zoom
@@ -3404,17 +3581,6 @@ class App extends React.Component<AppProps, AppState> {
         EVENT.GESTURE_END,
         this.onGestureEnd as any,
         false,
-      ),
-      addEventListener(
-        window,
-        EVENT.FOCUS,
-        () => {
-          this.maybeCleanupAfterMissingPointerUp(null);
-          // browsers (chrome?) tend to free up memory a lot, which results
-          // in canvas context being cleared. Thus re-render on focus.
-          this.triggerRender(true);
-        },
-        { passive: false },
       ),
     );
 
@@ -3570,7 +3736,56 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     if (prevProps.viewModeEnabled !== this.props.viewModeEnabled) {
-      this.setState({ viewModeEnabled: !!this.props.viewModeEnabled });
+      this.setState({
+        viewModeEnabled:
+          !this.interactionEnabled || !!this.props.viewModeEnabled,
+      });
+    }
+
+    // NOTE compare derived flags, not the raw prop, so that hosts inlining
+    // the object form (`interaction={{ allowed: { links: true } }}`) don't
+    // retrigger
+    // this on every render
+    if (isInteractionEnabled(prevProps) !== this.interactionEnabled) {
+      if (!this.interactionEnabled) {
+        // reset transient interaction state; view mode gets forced below
+        // which in turn re-runs addEventListeners & deselects elements
+        this.setState({
+          contextMenu: null,
+          openMenu: null,
+          openPopup: null,
+          cursorButton: "up",
+        });
+        this.maybeCleanupAfterMissingPointerUp(null);
+        resetCursor(this.interactiveCanvas);
+      } else {
+        this.setState({ viewModeEnabled: !!this.props.viewModeEnabled });
+      }
+      // listener tiers depend on `props.interaction` even when
+      // `state.viewModeEnabled` ends up unchanged
+      this.addEventListeners();
+    }
+
+    // NOTE link icons appearing/disappearing is handled by the re-render
+    // itself (`renderConfig.renderLinks`)
+    if (isLinkInteractionEnabled(prevProps) !== this.linksEnabled) {
+      if (!this.linksEnabled) {
+        this.hitLinkElement = undefined;
+        hideHyperlinkToolip();
+        resetCursor(this.interactiveCanvas);
+      }
+    }
+
+    if (
+      isBrowserZoomInteractionEnabled(prevProps) !== this.browserZoomEnabled
+    ) {
+      this.addEventListeners();
+    }
+
+    // nothing (host `updateScene`, actions, ...) may unset view mode while
+    // the editor is non-interactive
+    if (!this.interactionEnabled && !this.state.viewModeEnabled) {
+      this.setState({ viewModeEnabled: true });
     }
 
     if (prevState.viewModeEnabled !== this.state.viewModeEnabled) {
@@ -3673,6 +3888,9 @@ class App extends React.Component<AppProps, AppState> {
   // Copy/paste
 
   private onCut = withBatchedUpdates((event: ClipboardEvent) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
     const isExcalidrawActive = this.excalidrawContainerRef.current?.contains(
       document.activeElement,
     );
@@ -3685,6 +3903,9 @@ class App extends React.Component<AppProps, AppState> {
   });
 
   private onCopy = withBatchedUpdates((event: ClipboardEvent) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
     const isExcalidrawActive = this.excalidrawContainerRef.current?.contains(
       document.activeElement,
     );
@@ -3702,6 +3923,10 @@ class App extends React.Component<AppProps, AppState> {
   }
 
   private onTouchStart = (event: TouchEvent) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
+
     // fix for Apple Pencil Scribble (do not prevent for other devices)
     if (isIOS) {
       event.preventDefault();
@@ -3763,6 +3988,9 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   private onTouchEnd = (event: TouchEvent) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
     this.resetContextMenuTimer();
     if (event.touches.length > 0) {
       this.setState({
@@ -3947,6 +4175,10 @@ class App extends React.Component<AppProps, AppState> {
 
   public pasteFromClipboard = withBatchedUpdates(
     async (event: ClipboardEvent) => {
+      if (!this.interactionEnabled) {
+        return;
+      }
+
       const isPlainPaste = !!IS_PLAIN_PASTE;
 
       // #686
@@ -4974,6 +5206,10 @@ class App extends React.Component<AppProps, AppState> {
   // Input handling
   private onKeyDown = withBatchedUpdates(
     (event: React.KeyboardEvent | KeyboardEvent) => {
+      if (!this.interactionEnabled) {
+        return;
+      }
+
       // normalize `event.key` when CapsLock is pressed #2372
 
       if (
@@ -5563,6 +5799,9 @@ class App extends React.Component<AppProps, AppState> {
   );
 
   private onKeyUp = withBatchedUpdates((event: KeyboardEvent) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
     if (event.key === KEYS.SPACE) {
       if (
         (this.state.viewModeEnabled &&
@@ -5871,6 +6110,9 @@ class App extends React.Component<AppProps, AppState> {
 
   // fires only on Safari
   private onGestureStart = withBatchedUpdates((event: GestureEvent) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
     event.preventDefault();
 
     // we only want to deselect on touch screens because user may have selected
@@ -5886,6 +6128,9 @@ class App extends React.Component<AppProps, AppState> {
 
   // fires only on Safari
   private onGestureChange = withBatchedUpdates((event: GestureEvent) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
     event.preventDefault();
 
     // onGestureChange only has zoom factor but not the center.
@@ -5924,6 +6169,9 @@ class App extends React.Component<AppProps, AppState> {
 
   // fires only on Safari
   private onGestureEnd = withBatchedUpdates((event: GestureEvent) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
     event.preventDefault();
     // reselect elements only on touch screens (see onGestureStart)
     if (this.isTouchScreenMultiTouchGesture()) {
@@ -6653,6 +6901,7 @@ class App extends React.Component<AppProps, AppState> {
     >,
   ) => {
     if (
+      !this.interactionEnabled ||
       this.state.editingTextElement ||
       !this.shouldHandleBrowserCanvasDoubleClick(event.type)
     ) {
@@ -6846,6 +7095,9 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   private handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
     if (event.button !== POINTER_BUTTON.MAIN) {
       this.lastCompletedCanvasClicks = [];
       return;
@@ -6961,6 +7213,95 @@ class App extends React.Component<AppProps, AppState> {
         }
       }
     }
+  };
+
+  /**
+   * Applies (or clears) the element-link hover affordances — pointer cursor
+   * and tooltip — based on the current `hitLinkElement`. Returns whether a
+   * link is being hovered.
+   */
+  private applyElementLinkHoverAffordance = (): boolean => {
+    if (
+      this.hitLinkElement &&
+      !this.state.selectedElementIds[this.hitLinkElement.id]
+    ) {
+      setCursor(this.interactiveCanvas, CURSOR_TYPE.POINTER);
+
+      showHyperlinkTooltip(
+        this.hitLinkElement,
+        this.state,
+        this.scene.getNonDeletedElementsMap(),
+      );
+      return true;
+    }
+    hideHyperlinkToolip();
+    return false;
+  };
+
+  /**
+   * On touchscreens (where no hover precedes the tap) re-derives
+   * `hitLinkElement`, then opens the hit element link, if any.
+   * Returns whether a link click was handled.
+   */
+  private maybeHandleElementLinkClick = (
+    event: React.PointerEvent<HTMLCanvasElement>,
+    scenePointer: { x: number; y: number },
+  ): boolean => {
+    if (this.editorInterface.isTouchScreen) {
+      const hitElement = this.getElementAtPosition(
+        scenePointer.x,
+        scenePointer.y,
+        {
+          includeLockedElements: true,
+        },
+      );
+      this.hitLinkElement = this.getElementLinkAtPosition(
+        scenePointer,
+        hitElement,
+      );
+    }
+
+    if (
+      this.hitLinkElement &&
+      this.lastPointerDownEvent &&
+      !this.state.selectedElementIds[this.hitLinkElement.id]
+    ) {
+      this.handleElementLinkClick(event);
+      return true;
+    }
+    return false;
+  };
+
+  /**
+   * Restricted pointer handling for the non-interactive editor with
+   * `interaction: { allowed: { links: true } }` — runs only the element-link
+   * concern (shared with the full pointer handlers above) so links behave
+   * like in view mode without the rest of the canvas pointer machinery.
+   */
+  private handleLinkModePointerMove = (
+    event: React.PointerEvent<HTMLCanvasElement>,
+  ) => {
+    const scenePointer = viewportCoordsToSceneCoords(event, this.state);
+    const hitElementMightBeLocked = this.getElementAtPosition(
+      scenePointer.x,
+      scenePointer.y,
+      { includeLockedElements: true },
+    );
+    this.hitLinkElement = this.getElementLinkAtPosition(
+      scenePointer,
+      hitElementMightBeLocked,
+    );
+    if (!this.applyElementLinkHoverAffordance()) {
+      resetCursor(this.interactiveCanvas);
+    }
+  };
+
+  private handleLinkModePointerUp = (
+    event: React.PointerEvent<HTMLCanvasElement>,
+  ) => {
+    this.lastPointerUpEvent = event;
+    const scenePointer = viewportCoordsToSceneCoords(event, this.state);
+    this.maybeHandleElementLinkClick(event, scenePointer);
   };
 
   /**
@@ -7123,6 +7464,12 @@ class App extends React.Component<AppProps, AppState> {
   private handleCanvasPointerMove = (
     event: React.PointerEvent<HTMLCanvasElement>,
   ) => {
+    if (!this.interactionEnabled) {
+      if (this.linksEnabled) {
+        this.handleLinkModePointerMove(event);
+      }
+      return;
+    }
     this.savePointer(event.clientX, event.clientY, this.state.cursorButton);
     this.lastPointerMoveEvent = event.nativeEvent;
     const scenePointer = viewportCoordsToSceneCoords(event, this.state);
@@ -7638,19 +7985,7 @@ class App extends React.Component<AppProps, AppState> {
       );
     }
 
-    if (
-      this.hitLinkElement &&
-      !this.state.selectedElementIds[this.hitLinkElement.id]
-    ) {
-      setCursor(this.interactiveCanvas, CURSOR_TYPE.POINTER);
-
-      showHyperlinkTooltip(
-        this.hitLinkElement,
-        this.state,
-        this.scene.getNonDeletedElementsMap(),
-      );
-    } else {
-      hideHyperlinkToolip();
+    if (!this.applyElementLinkHoverAffordance()) {
       if (isLaserTool) {
         return;
       }
@@ -7765,6 +8100,9 @@ class App extends React.Component<AppProps, AppState> {
 
   // set touch moving for mobile context menu
   private handleTouchMove = (event: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!this.interactionEnabled) {
+      return;
+    }
     invalidateContextMenu = true;
   };
 
@@ -7906,6 +8244,14 @@ class App extends React.Component<AppProps, AppState> {
   private handleCanvasPointerDown = (
     event: React.PointerEvent<HTMLElement>,
   ) => {
+    if (!this.interactionEnabled) {
+      if (this.linksEnabled) {
+        // needed by handleElementLinkClick (drag-distance & hit checks)
+        this.lastPointerDownEvent = event;
+      }
+      return;
+    }
+
     const selectedElements = this.scene.getSelectedElements(this.state);
 
     // If Ctrl is not held, ensure isBindingEnabled reflects the user preference.
@@ -8367,6 +8713,12 @@ class App extends React.Component<AppProps, AppState> {
   private handleCanvasPointerUp = (
     event: React.PointerEvent<HTMLCanvasElement>,
   ) => {
+    if (!this.interactionEnabled) {
+      if (this.linksEnabled) {
+        this.handleLinkModePointerUp(event);
+      }
+      return;
+    }
     if (getFeatureFlag("COMPLEX_BINDINGS")) {
       this.resetDelayedBindMode();
     }
@@ -8399,26 +8751,10 @@ class App extends React.Component<AppProps, AppState> {
       return;
     }
 
-    if (this.editorInterface.isTouchScreen) {
-      const hitElement = this.getElementAtPosition(
-        scenePointer.x,
-        scenePointer.y,
-        {
-          includeLockedElements: true,
-        },
-      );
-      this.hitLinkElement = this.getElementLinkAtPosition(
-        scenePointer,
-        hitElement,
-      );
-    }
-
     if (
-      this.hitLinkElement &&
-      !this.state.selectedElementIds[this.hitLinkElement.id]
+      !this.maybeHandleElementLinkClick(event, scenePointer) &&
+      this.state.viewModeEnabled
     ) {
-      this.handleElementLinkClick(event);
-    } else if (this.state.viewModeEnabled) {
       this.setState({
         activeEmbeddable: null,
         selectedElementIds: {},
@@ -12319,6 +12655,10 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   private handleAppOnDrop = async (event: React.DragEvent<HTMLDivElement>) => {
+    // NOTE no preventDefault so the host page can handle the drop itself
+    if (!this.interactionEnabled) {
+      return;
+    }
     const { x: sceneX, y: sceneY } = viewportCoordsToSceneCoords(
       event,
       this.state,
@@ -12526,6 +12866,10 @@ class App extends React.Component<AppProps, AppState> {
   private handleCanvasContextMenu = (
     event: React.MouseEvent<HTMLElement | HTMLCanvasElement>,
   ) => {
+    // NOTE no preventDefault so the browser default context menu applies
+    if (!this.interactionEnabled) {
+      return;
+    }
     event.preventDefault();
 
     if (
@@ -13042,6 +13386,10 @@ class App extends React.Component<AppProps, AppState> {
     (
       event: WheelEvent | React.WheelEvent<HTMLDivElement | HTMLCanvasElement>,
     ) => {
+      // NOTE no preventDefault so the page can scroll over the editor
+      if (!this.interactionEnabled) {
+        return;
+      }
       if (
         !(
           event.target instanceof HTMLCanvasElement ||
@@ -13162,6 +13510,11 @@ class App extends React.Component<AppProps, AppState> {
   }
 
   private savePointer = (x: number, y: number, button: "up" | "down") => {
+    // don't broadcast pointer updates (props.onPointerUpdate) when
+    // non-interactive
+    if (!this.interactionEnabled) {
+      return;
+    }
     if (!x || !y) {
       return;
     }

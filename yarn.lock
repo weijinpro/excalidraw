@@ -6105,6 +6105,10 @@ gzip-size@5.1.1:
     duplexer "^0.1.1"
     pify "^4.0.1"
 
+hachure-fill@^0.5.2:
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/hachure-fill/-/hachure-fill-0.5.2.tgz#d19bc4cc8750a5962b47fb1300557a85fcf934cc"
+
 handle-thing@^2.0.0:
   version "2.0.1"
   resolved "https://registry.npmjs.org/handle-thing/-/handle-thing-2.0.1.tgz"
@@ -10713,10 +10717,11 @@ rollup@^1.31.1:
     "@types/node" "*"
     acorn "^7.1.0"
 
-roughjs@4.3.1:
-  version "4.3.1"
-  resolved "https://registry.npmjs.org/roughjs/-/roughjs-4.3.1.tgz"
+roughjs@4.6.6:
+  version "4.6.6"
+  resolved "https://registry.yarnpkg.com/roughjs/-/roughjs-4.6.6.tgz#1059f49a5e0c80dee541a005b20cc322b222158b"
   dependencies:
+    hachure-fill "^0.5.2"
     path-data-parser "^0.1.0"
     points-on-curve "^0.2.0"
     points-on-path "^0.2.1"
